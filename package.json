@@ -51,8 +51,5 @@
 	"devDependencies": {
 		"@types/uuid": "^9.0.1",
 		"nodemon": "^2.0.22"
-	},
-	"exports": {
-		"./actions": "./src/socket/actions.ts"
 	}
 }
