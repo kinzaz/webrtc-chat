@@ -2,6 +2,7 @@ import { useRef, useEffect, useCallback } from 'react';
 import useStateWithCallback from './useStateWithCallback';
 import socket from '../socket';
 import ACTIONS from '../socket/actions';
+import freeice from 'freeice';
 
 export const LOCAL_VIDEO = 'LOCAL_VIDEO';
 
@@ -22,6 +23,77 @@ export default function useWebRTC(roomId: string | undefined) {
 	const peerMediaElements = useRef({
 		[LOCAL_VIDEO]: null,
 	});
+
+	useEffect(() => {
+		async function handleNewPeer({ peerId, createOffer }) {
+			if (peerId in peerConnections.current) {
+				return console.warn(`Already connected to peer ${peerId}`);
+			}
+			peerConnections.current[peerId] = new RTCPeerConnection({
+				iceServers: freeice(),
+			});
+			peerConnections.current[peerId].onicecandidate = e => {
+				if (e.candidate) {
+					socket.emit(ACTIONS.RELAY_ICE, {
+						peerId,
+						iceCandidate: e.candidate,
+					});
+				}
+			};
+
+			let tracksNumber = 0;
+			peerConnections.current[peerId].ontrack = ({
+				streams: [remoteStream],
+			}) => {
+				tracksNumber++;
+				if (tracksNumber == 2) {
+					// video & audio
+					addNewClient(peerId, () => {
+						peerMediaElements.current[peerId].srcObject = remoteStream;
+					});
+				}
+			};
+
+			localMediaStream.current.getTracks().forEach(track => {
+				peerConnections.current[peerId].addTrack(
+					track,
+					localMediaStream.current
+				);
+			});
+
+			if (createOffer) {
+				const offer = await peerConnections.current[peerId].createOffer();
+				await peerConnections.current[peerId].setLocalDescription(offer);
+				socket.emit(ACTIONS.RELAY_SDP, {
+					peerId,
+					sessionDescription: offer,
+				});
+			}
+		}
+		socket.on(ACTIONS.ADD_PEER, handleNewPeer);
+	}, []);
+
+	useEffect(() => {
+		async function setRemoteMedia({
+			peerId,
+			sessionDescription: remoteDescription,
+		}) {
+			await peerConnections.current[peerId].setRemoteDescription(
+				new RTCSessionDescription(sessionDescription)
+			);
+			if (remoteDescription.type === 'offer') {
+				const answer = await peerConnections.current[peerId].createAnswer();
+				await peerConnections.current[peerId].setLocalDescription(answer);
+				socket.emit(ACTIONS.RELAY_SDP, {
+					peerId,
+					sessionDescription: answer,
+				});
+			}
+		}
+		socket.on(ACTIONS.SESSION_DESCRIPTION, setRemoteMedia);
+	}, []);
+
+	useEffect
 
 	useEffect(() => {
 		async function startCapture() {
