@@ -74,6 +74,18 @@ export default function useWebRTC(roomId: string | undefined) {
 	}, []);
 
 	useEffect(() => {
+		socket.on(ACTIONS.REMOVE_PEER, ({ peerId }) => {
+			if (peerConnections.current[peerId]) {
+				peerConnections.current[peerId].close();
+			}
+			delete peerConnections.current[peerId];
+			delete peerMediaElements.current[peerId];
+
+			setClients(list => list.filter(c => c !== peerId));
+		});
+	}, []);
+
+	useEffect(() => {
 		async function setRemoteMedia({
 			peerId,
 			sessionDescription: remoteDescription,
@@ -93,7 +105,13 @@ export default function useWebRTC(roomId: string | undefined) {
 		socket.on(ACTIONS.SESSION_DESCRIPTION, setRemoteMedia);
 	}, []);
 
-	useEffect
+	useEffect(() => {
+		socket.on(ACTIONS.ICE_CANDIDATE, ({ peerId, iceCandidate }) => {
+			peerConnections.current[peerId].addIceCandidate(
+				new RTCIceCandidate(iceCandidate)
+			);
+		});
+	}, []);
 
 	useEffect(() => {
 		async function startCapture() {
