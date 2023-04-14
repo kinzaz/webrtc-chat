@@ -3,7 +3,7 @@ import { LOCAL_VIDEO, useWebRTC } from '../../hooks/useWebRTC';
 
 function layout(clientsNumber = 1) {
 	const pairs: any = Array.from({ length: clientsNumber }).reduce(
-		(acc: any, next, index, arr) => {
+		(acc: any, next: any, index: any, arr: any) => {
 			if (index % 2 === 0) {
 				acc.push(arr.slice(index, index + 2));
 			}
@@ -35,8 +35,8 @@ function layout(clientsNumber = 1) {
 		.flat();
 }
 
-export function Room() {
-	const { id: roomID } = useParams();
+export default function Room() {
+	const { id: roomID } = useParams<any>();
 	const { clients, provideMediaRef } = useWebRTC(roomID);
 	const videoLayout = layout(clients.length);
 

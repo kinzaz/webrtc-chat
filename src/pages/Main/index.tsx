@@ -1,13 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import socket from '../../socket';
 import ACTIONS from '../../socket/actions';
+import { useHistory } from 'react-router';
 import { v4 } from 'uuid';
-import { useNavigate } from 'react-router';
 
-export function Main() {
-	const navigate = useNavigate();
+export default function Main() {
+	const history = useHistory();
 	const [rooms, updateRooms] = useState([]);
-	const rootNode = useRef(null);
+	const rootNode = useRef<any>();
 
 	useEffect(() => {
 		socket.on(ACTIONS.SHARE_ROOMS, ({ rooms = [] } = {}) => {
@@ -27,7 +27,7 @@ export function Main() {
 						{roomID}
 						<button
 							onClick={() => {
-								navigate(`/room/${roomID}`);
+								history.push(`/room/${roomID}`);
 							}}
 						>
 							JOIN ROOM
@@ -38,7 +38,7 @@ export function Main() {
 
 			<button
 				onClick={() => {
-					navigate(`/room/${v4()}`);
+					history.push(`/room/${v4()}`);
 				}}
 			>
 				Create New Room
