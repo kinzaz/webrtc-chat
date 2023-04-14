@@ -1,40 +1,45 @@
 import { useParams } from 'react-router';
-import useWebRTC, { LOCAL_VIDEO } from '../../hooks/useWebRTC';
+import { LOCAL_VIDEO, useWebRTC } from '../../hooks/useWebRTC';
 
-function layout(clientNumber) {
-	const pairs = Array.from({ length: clientNumber }).reduce(
-		(acc, next, index, arr) => {
+function layout(clientsNumber = 1) {
+	const pairs: any = Array.from({ length: clientsNumber }).reduce(
+		(acc: any, next, index, arr) => {
 			if (index % 2 === 0) {
 				acc.push(arr.slice(index, index + 2));
 			}
+
 			return acc;
 		},
 		[]
 	);
+
 	const rowsNumber = pairs.length;
 	const height = `${100 / rowsNumber}%`;
-	return pairs.map((row, index, arr) => {
-		if (index == arr.length - 1 && row.length == 1) {
-			return [
-				{
-					width: '100%',
-					height,
-				},
-			];
-		}
-		return row
-			.map(() => ({
+
+	return pairs
+		.map((row: any, index: any, arr: any) => {
+			if (index === arr.length - 1 && row.length === 1) {
+				return [
+					{
+						width: '100%',
+						height,
+					},
+				];
+			}
+
+			return row.map(() => ({
 				width: '50%',
 				height,
-			}))
-			.flat();
-	});
+			}));
+		})
+		.flat();
 }
 
-export const Room = (): JSX.Element => {
-	const { id: roomId } = useParams();
-	const { clients, provideMediaRef } = useWebRTC(roomId);
+export function Room() {
+	const { id: roomID } = useParams();
+	const { clients, provideMediaRef } = useWebRTC(roomID);
 	const videoLayout = layout(clients.length);
+
 	return (
 		<div
 			style={{
@@ -45,22 +50,22 @@ export const Room = (): JSX.Element => {
 				height: '100vh',
 			}}
 		>
-			{clients.map((clientId, index) => {
+			{clients.map((clientID: any, index: any) => {
 				return (
-					<div key={clientId} style={videoLayout[index]}>
+					<div key={clientID} style={videoLayout[index]} id={clientID}>
 						<video
-							width={'100%'}
-							height={'100%'}
+							width="100%"
+							height="100%"
 							ref={instance => {
-								provideMediaRef(clientId, instance);
+								provideMediaRef(clientID, instance);
 							}}
 							autoPlay
 							playsInline
-							muted={clientId === LOCAL_VIDEO}
+							muted={clientID === LOCAL_VIDEO}
 						/>
 					</div>
 				);
 			})}
 		</div>
 	);
-};
+}
